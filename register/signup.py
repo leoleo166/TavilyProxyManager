@@ -283,6 +283,21 @@ def recognize_captcha_with_vision(captcha_base64: str, config: dict) -> str:
 
     print(f"    PNG大小: {len(png_base64)} bytes")
 
+    # Local ONNX model recognition
+    captcha_mode = config.get("CAPTCHA_MODE", "api")
+    if captcha_mode == "local":
+        print("    使用本地模型识别...")
+        try:
+            from captcha_model import recognize_captcha_local
+            result = recognize_captcha_local(png_base64)
+            if result and len(result) == 6 and re.match(r'^[A-Za-z0-9]{6}$', result):
+                return result
+            print(f"    本地识别失败或结果无效 ({result})，回退到API...")
+        except ImportError:
+            print("    captcha_model 未安装，回退到API...")
+        except Exception as e:
+            print(f"    本地识别出错: {e}，回退到API...")
+
     api_url = f"{config['OPENAI_BASEURL']}/chat/completions"
     api_key = config['OPENAI_API_KEY']
     model = config['OPENAI_MODEL']
